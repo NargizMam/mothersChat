@@ -1,7 +1,7 @@
 import express from 'express';
 import expressWs from "express-ws";
 import cors from 'cors';
-import {ActiveConnections, IncomingMessage} from "./types";
+import usersRouter from "./routers/user";
 
 const app = express();
 
@@ -9,10 +9,8 @@ expressWs(app);
 
 const port = 8000;
 app.use(cors());
+app.use('/users', usersRouter);
 
-const router = express.Router();
-
-const activeConnections: ActiveConnections = {};
 
 
 
