@@ -5,8 +5,8 @@ const AnonymousMenu = () => {
   return (
     <>
       <Grid item>
-        <Button component={NavLink} to='/register' color='secondary'>Sign up</Button>
-        <Button component={NavLink} to='/login' color='secondary'>Log in</Button>
+        <Button component={NavLink} to='/register' color='secondary'>Присоединиться</Button>
+        <Button component={NavLink} to='/login' color='secondary'>Войти</Button>
       </Grid>
     </>
   );

@@ -15,8 +15,8 @@ export interface UserFields {
     token: string;
     role: string;
     displayName: string;
-    googleId?: string;
-    image?: string;
+    googleID?: string;
+    avatar?: string;
 }
 export interface UserMethods {
     checkPassword(password: string): Promise<boolean>;
