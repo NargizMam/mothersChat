@@ -40,3 +40,17 @@ export interface RegisterResponse {
 export interface GlobalError {
   error: string;
 }
+export interface ChatPost {
+  user: {
+    id: string,
+    displayName: string,
+    avatar: string
+  },
+  text: string,
+  createdAt: string
+}
+
+export interface IncomingPost {
+  type: string;
+  payload: ChatPost[];
+}

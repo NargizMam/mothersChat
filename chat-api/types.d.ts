@@ -4,11 +4,6 @@ import {Model} from "mongoose";
 export interface ActiveConnections {
     [id: string]: WebSocket
 }
-export interface IncomingMessage {
-    type: string;
-    payload: string;
-}
-
 export interface UserFields {
     email: string;
     password: string;
@@ -23,3 +18,18 @@ export interface UserMethods {
     generateToken(): void;
 }
 type UserModal = Model<UserFields, {}, UserMethods>;
+
+export interface PostApi {
+    id: string;
+    message: string;
+    user: string;
+    createdAt: string;
+}
+export interface PostMutation {
+    message: string;
+    user: string;
+}
+export interface IncomingMessage {
+    type: string;
+    payload: PostMutation[];
+}

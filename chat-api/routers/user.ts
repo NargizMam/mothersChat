@@ -41,7 +41,6 @@ usersRouter.post('/google', async (req, res, next) => {
         const id = payload['sub'];
         const displayName = payload['name'];
         const image = payload['picture'];
-        console.log(id)
         if (!email) {
             return res.status(400).send({ error: 'Not enough user data to continue' });
         }
@@ -56,8 +55,6 @@ usersRouter.post('/google', async (req, res, next) => {
                 avatar: image,
             });
         }
-        console.log(user)
-
         user.generateToken();
 
         await user.save();

@@ -11,7 +11,6 @@ import WarningMessage from "./features/WarningMessage/WarningMessages.tsx";
 import Home from "./features/Home.tsx";
 import Footer from './components/Footer/Footer.tsx';
 import Chat from './features/Chat/Chat.tsx';
-
 const App = () => {
     const user = useAppSelector(selectUser);
 
