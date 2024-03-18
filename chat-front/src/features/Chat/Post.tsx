@@ -1,14 +1,18 @@
 import React from 'react';
-import { Typography, Paper, makeStyles } from '@mui/material';
-import { ChatPost } from '../../types';
+import { Paper, Typography } from '@mui/material';
+import { ChatPostApi } from '../../types';
+import LoadingButton from '@mui/lab/LoadingButton';
+import { useAppSelector } from '../../app/hooks.ts';
+import { selectUser } from '../users/usersSlice.ts';
 
 interface Props {
-  message: ChatPost;
+  message: ChatPostApi;
 }
 
 
 
 const Post: React.FC<Props> = ({ message }) => {
+  const user = useAppSelector(selectUser);
 
   return (
     <Paper elevation={3} sx={{padding: '10px', marginBottom: '5px'}}>
@@ -21,6 +25,7 @@ const Post: React.FC<Props> = ({ message }) => {
       <Typography variant="body2" color="textSecondary">
         {new Date(message.createdAt).toLocaleString()}
       </Typography>
+      {user?.role === 'moderator' && (<LoadingButton>Delete</LoadingButton>)}
     </Paper>
   );
 };

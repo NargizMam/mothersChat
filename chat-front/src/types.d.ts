@@ -37,20 +37,32 @@ export interface RegisterResponse {
   user: User;
 }
 
+export interface UserClient {
+  _id: string,
+  displayName: string,
+  avatar: string | null
+}
 export interface GlobalError {
   error: string;
 }
 export interface ChatPost {
-  user: {
-    id: string,
-    displayName: string,
-    avatar: string
-  },
+  user: string,
+  text: string,
+}
+export interface OutgoingPost {
+  type: string,
+  payload: ChatPost[];
+}
+export interface ChatPostApi {
+  _id: string,
+  user: UserClient,
   text: string,
   createdAt: string
 }
 
+
 export interface IncomingPost {
-  type: string;
-  payload: ChatPost[];
+  type: string,
+  payload: ChatPostApi[];
 }
+

@@ -39,14 +39,14 @@ router.ws('/posts', async (ws, req) => {
                 }
 
                 ws.send(JSON.stringify({ type: 'WELCOME', payload:  {
-                    user: 'Moderator', text: `${user.displayName}, добро пожаловать в чат!`}}));
+                    user: 'Moderator', text: `${user.displayName}, добро пожаловать в чат!`
+                    }}));
 
                 const messages = await Post.find().populate('user', 'displayName avatar')
                     .sort({ createdAt: -1 })
-                    .limit(30)
-                ;
-                const reversedMessages = messages.reverse();
-                ws.send(JSON.stringify({ type: 'LAST_MESSAGES', payload: reversedMessages }));
+                    .limit(30);
+                console.log(messages)
+                ws.send(JSON.stringify({ type: 'LAST_MESSAGES', payload: messages }));
             } else if (userId && data.type === 'NEW_MESSAGE') {
                 const newMessage = new Post({
                     text: data.payload.text,
