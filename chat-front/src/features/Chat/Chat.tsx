@@ -1,12 +1,12 @@
-import { useEffect, useRef, useState } from 'react';
-import { Grid, TextField, Typography } from '@mui/material';
+import {useEffect, useRef, useState} from 'react';
+import {Grid, TextField, Typography} from '@mui/material';
 import IconButton from '@mui/material/IconButton';
 import SendIcon from '@mui/icons-material/Send';
 import Senders from './Senders';
-import { ChatPostApi, IncomingPost, UserClient } from '../../types';
-import { useAppSelector } from '../../app/hooks.ts';
-import { selectUser } from '../users/usersSlice.ts';
-import { useNavigate } from 'react-router-dom';
+import {ChatPostApi, IncomingPost, UserClient} from '../../types';
+import {useAppSelector} from '../../app/hooks.ts';
+import {selectUser} from '../users/usersSlice.ts';
+import {useNavigate} from 'react-router-dom';
 import Post from './Post.tsx';
 
 const Chat = () => {
@@ -20,12 +20,13 @@ const Chat = () => {
     const token = user?.token;
 
     useEffect(() => {
+
         const connectWebSocket = () => {
             ws.current = new WebSocket('ws://localhost:8000/posts');
 
             ws.current.onopen = () => {
                 if (token) {
-                    sendMessage(JSON.stringify({ type: 'LOGIN', payload: token }));
+                    sendMessage(JSON.stringify({type: 'LOGIN', payload: token}));
                 } else {
                     navigate('/');
                 }
@@ -50,16 +51,6 @@ const Chat = () => {
                 }
             };
 
-            ws.current.onclose = () => {
-                console.error('WebSocket connection closed unexpectedly. Reconnecting...');
-                setIsConnected(false);
-                setTimeout(connectWebSocket, 3000);
-            };
-
-            ws.current.onerror = (error) => {
-                console.error('WebSocket encountered error:', error);
-                ws.current?.close();
-            };
         };
 
         connectWebSocket();
@@ -83,7 +74,7 @@ const Chat = () => {
         if (newMessage.trim() !== '') {
             const outgoingMessage = {
                 type: 'NEW_MESSAGE',
-                payload: { text: newMessage },
+                payload: {text: newMessage},
             };
             sendMessage(JSON.stringify(outgoingMessage));
             setNewMessage('');
@@ -93,24 +84,26 @@ const Chat = () => {
     const deletedMessage = (id: string) => {
         const outgoingMessage = {
             type: 'DELETE_MESSAGE',
-            payload: { text: id },
+            payload: {text: id},
         };
         sendMessage(JSON.stringify(outgoingMessage));
     };
 
     return (
-        <Grid container spacing={2} sx={{ overflow: 'auto', mb: 30 }}>
+        <Grid container spacing={2} sx={{overflow: 'auto', mb: 30}}>
             <Grid item xs={4}>
                 <Typography variant="h2">Участники</Typography>
                 {userClient.length > 0 && userClient.map(user => (
-                    <Senders key={user._id} userClient={user} />
+                    <Senders key={user._id} userClient={user}/>
                 ))}
             </Grid>
             <Grid item xs={8}>
                 <Typography variant="h2">Чат</Typography>
                 {messages && messages.length > 0 && messages.map((message) => (
                     <Post key={message._id}
-                          message={message}
+                          displayName={message.user?.displayName}
+                          text={message.text}
+                          createdAt={message.createdAt}
                           onDeleteMessage={() => deletedMessage(message._id)}
                     />
                 ))}
@@ -126,7 +119,7 @@ const Chat = () => {
                     </Grid>
                     <Grid item>
                         <IconButton color="primary" onClick={handleSendMessage} disabled={!isConnected}>
-                            <SendIcon />
+                            <SendIcon/>
                         </IconButton>
                     </Grid>
                 </Grid>

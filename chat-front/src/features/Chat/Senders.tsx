@@ -14,10 +14,10 @@ const Senders: React.FC<Props> = ({userClient}) => {
       <Grid item >
         <Grid container alignItems="center" spacing={1}>
           <Grid item>
-            <Avatar sx={{ bgcolor: 'green'}}>
+            <Avatar sx={{bgcolor: 'green'}}>
               {userClient.avatar ?
-                (<img src={userClient.avatar} alt={userClient.displayName}/>):
-                (<PersonIcon/>)}
+                  (<img src={userClient.avatar} alt={userClient.displayName}/>) :
+                  (<PersonIcon/>)}
             </Avatar>
           </Grid>
           <Grid item>
