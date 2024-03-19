@@ -4,7 +4,7 @@ import cors from 'cors';
 import usersRouter from "./routers/user";
 import mongoose from "mongoose";
 import config from "./config";
-import {ActiveConnections, PostMutation} from "./types";
+import {ActiveConnections, UserWS} from "./types";
 import Post from './models/Post';
 import User from "./models/User";
 
@@ -20,54 +20,62 @@ app.use('/users', usersRouter);
 const router = express.Router();
 
 const activeConnections: ActiveConnections = {};
-const sentPosts: PostMutation[] = [];
-router.ws('/posts', async (ws, req) => {
-    let userId: string | null = null;
+router.ws('/posts', async (ws, _req, next) => {
+    let userWS: UserWS | null = null;
 
     ws.on('message', async (message) => {
-        try {
             const data = JSON.parse(message.toString());
-            console.log(data)
-            if (!userId && data.type === 'LOGIN' && data.payload) {
+
+            if (data.type === 'LOGIN') {
                 const token = data.payload;
-                const user = await User.findOne({ token });
+                const user = await User.findOne({token}, '_id displayName avatar') as UserWS;
+
                 if (user) {
-                    userId = user._id.toString();
-                    activeConnections[userId] = ws;
-                } else {
-                    throw new Error('Неверный токен пользователя');
+                    userWS = user;
+                    activeConnections[user._id] = ws;
+
+                    const users = await User.find({isActive: true}, '_id displayName avatar');
+
+                    const messages = await Post.find().populate('user', 'displayName avatar')
+                        .limit(30);
+                    Object.values(activeConnections).forEach((connection) => {
+                        connection.send(JSON.stringify({type: 'LAST_MESSAGES', payload: {users, messages}}));
+                    });
                 }
+            }
 
-                ws.send(JSON.stringify({ type: 'WELCOME', payload:  {
-                    user: 'Moderator', text: `${user.displayName}, добро пожаловать в чат!`
-                    }}));
-
-                const messages = await Post.find().populate('user', 'displayName avatar')
-                    .sort({ createdAt: -1 })
-                    .limit(30);
-                console.log(messages)
-                ws.send(JSON.stringify({ type: 'LAST_MESSAGES', payload: messages }));
-            } else if (userId && data.type === 'NEW_MESSAGE') {
+            if (data.type === 'NEW_MESSAGE') {
                 const newMessage = new Post({
                     text: data.payload.text,
-                    user: userId,
+                    user: userWS,
                 });
                 await newMessage.save();
 
-                const payload = { type: 'NEW_MESSAGE', payload: newMessage };
-                console.log(newMessage)
+                const payload = {type:'SEND_MESSAGE' , payload: {message: newMessage}};
                 Object.values(activeConnections).forEach((connection) => {
                     connection.send(JSON.stringify(payload));
                 });
             }
-        } catch (error) {
-            console.error('Ошибка обработки сообщения:', error);
+        if (data.type === 'DELETE_MESSAGE') {
+            try{
+                await Post.deleteOne({_id: data.payload.text});
+            }catch (e) {
+                next(e);
+            }
+            const messages = await Post.find().populate('user', 'displayName avatar')
+                .limit(30);
+            const payload = {type:'SEND_WITHOUT_DELETED_MESSAGE' , payload: {messages: messages}};
+            Object.values(activeConnections).forEach((connection) => {
+                connection.send(JSON.stringify(payload));
+            });
         }
-    });
+
+        }
+    );
 
     ws.on('close', () => {
-        if (userId) {
-            delete activeConnections[userId];
+        if(userWS){
+            delete activeConnections[userWS._id];
         }
     });
 });

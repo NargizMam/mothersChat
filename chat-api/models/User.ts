@@ -40,6 +40,10 @@ const UserSchema = new Schema<UserFields, UserModal, UserMethods>({
     },
     googleID: String,
     avatar: String,
+    isActive: {
+        type: Boolean,
+        required: true,
+    },
 });
 
 UserSchema.methods.generateToken = function () {

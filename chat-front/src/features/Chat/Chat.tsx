@@ -1,112 +1,120 @@
-import {useEffect, useRef, useState} from 'react';
-import {Grid, TextField, Typography} from '@mui/material';
+import { useEffect, useRef, useState } from 'react';
+import { Grid, TextField, Typography } from '@mui/material';
 import IconButton from '@mui/material/IconButton';
 import SendIcon from '@mui/icons-material/Send';
 import Senders from './Senders';
-import {ChatPostApi, IncomingPost, UserClient} from '../../types';
-import {useAppSelector} from '../../app/hooks.ts';
-import {selectUser} from '../users/usersSlice.ts';
-import {useNavigate} from 'react-router-dom';
+import { ChatPostApi, IncomingPost, UserClient } from '../../types';
+import { useAppSelector } from '../../app/hooks.ts';
+import { selectUser } from '../users/usersSlice.ts';
+import { useNavigate } from 'react-router-dom';
 import Post from './Post.tsx';
 
 const Chat = () => {
     const [newMessage, setNewMessage] = useState('');
     const [messages, setMessages] = useState<ChatPostApi[]>([]);
     const [userClient, setUserClient] = useState<UserClient[]>([]);
+    const [isConnected, setIsConnected] = useState(false); // Состояние соединения
     const ws = useRef<WebSocket | null>(null);
     const user = useAppSelector(selectUser);
     const navigate = useNavigate();
     const token = user?.token;
 
     useEffect(() => {
-        const sendMessage = (message: string) => {
-            if (ws.current && ws.current.readyState === WebSocket.OPEN) {
-                ws.current.send(message);
-            } else {
-                console.error('WebSocket is not open or not initialized.');
-            }
+        const connectWebSocket = () => {
+            ws.current = new WebSocket('ws://localhost:8000/posts');
+
+            ws.current.onopen = () => {
+                if (token) {
+                    sendMessage(JSON.stringify({ type: 'LOGIN', payload: token }));
+                } else {
+                    navigate('/');
+                }
+                setIsConnected(true);
+            };
+
+            ws.current.onmessage = (event) => {
+                const decodedMessage = JSON.parse(event.data) as IncomingPost;
+                switch (decodedMessage.type) {
+                    case 'LAST_MESSAGES':
+                        setUserClient(decodedMessage.payload.users);
+                        setMessages(decodedMessage.payload.messages);
+                        break;
+                    case 'SEND_MESSAGE':
+                        setMessages(prev => [...prev, decodedMessage.payload.message]);
+                        break;
+                    case 'SEND_WITHOUT_DELETED_MESSAGE':
+                        setMessages(decodedMessage.payload.messages);
+                        break;
+                    default:
+                        console.log('Неподдерживаемый тип сообщения:', decodedMessage.type);
+                }
+            };
+
+            ws.current.onclose = () => {
+                console.error('WebSocket connection closed unexpectedly. Reconnecting...');
+                setIsConnected(false);
+                setTimeout(connectWebSocket, 3000);
+            };
+
+            ws.current.onerror = (error) => {
+                console.error('WebSocket encountered error:', error);
+                ws.current?.close();
+            };
         };
 
-        ws.current = new WebSocket('ws://localhost:8000/posts');
-
-        ws.current.onopen = () => {
-            if (token) {
-                sendMessage(JSON.stringify({type: 'LOGIN', payload: token}));
-            } else {
-                navigate('/');
-            }
-        };
-
-        ws.current.onclose = () => {
-            console.log('WebSocket connection closed');
-        };
-
-        ws.current.onmessage = (event) => {
-            const decodedMessage = JSON.parse(event.data) as IncomingPost;
-
-            switch (decodedMessage.type) {
-                case 'WELCOME':
-                    setMessages((prevMessages) => prevMessages.concat(decodedMessage.payload));
-                    break;
-                case 'LAST_MESSAGES':
-                  decodedMessage.payload.forEach(payload => {
-                    setUserClient(prev => {
-                      if (!prev.some(user => user._id === payload.user._id)) {
-                        return [...prev, payload.user];
-                      } else {
-                        return prev;
-                      }
-                    });
-                  });
-
-                  setMessages(decodedMessage.payload);
-                    break;
-                case 'NEW_MESSAGE':
-                    setMessages((prevMessages) => prevMessages.concat(decodedMessage.payload));
-                    break;
-                default:
-                    console.log('Неподдерживаемый тип сообщения:', decodedMessage.type);
-            }
-        };
+        connectWebSocket();
 
         return () => {
             if (ws.current) {
                 ws.current.close();
             }
         };
-    }, [userClient, navigate, token]);
+    }, [navigate, token]);
+
+    const sendMessage = (message: string) => {
+        if (ws.current && ws.current.readyState === WebSocket.OPEN) {
+            ws.current.send(message);
+        } else {
+            console.error('WebSocket is not open or not initialized.');
+        }
+    };
 
     const handleSendMessage = () => {
         if (newMessage.trim() !== '') {
             const outgoingMessage = {
                 type: 'NEW_MESSAGE',
-                payload: {text: newMessage, user: token},
+                payload: { text: newMessage },
             };
-            if (ws.current && ws.current.readyState === WebSocket.OPEN) {
-                ws.current.send(JSON.stringify(outgoingMessage));
-            } else {
-                console.error('WebSocket connection is not open');
-            }
+            sendMessage(JSON.stringify(outgoingMessage));
             setNewMessage('');
         }
     };
 
+    const deletedMessage = (id: string) => {
+        const outgoingMessage = {
+            type: 'DELETE_MESSAGE',
+            payload: { text: id },
+        };
+        sendMessage(JSON.stringify(outgoingMessage));
+    };
+
     return (
-        <Grid container spacing={2}>
+        <Grid container spacing={2} sx={{ overflow: 'auto', mb: 30 }}>
             <Grid item xs={4}>
                 <Typography variant="h2">Участники</Typography>
                 {userClient.length > 0 && userClient.map(user => (
-                    <Senders key={user._id} userClient={user}/>
+                    <Senders key={user._id} userClient={user} />
                 ))}
             </Grid>
             <Grid item xs={8}>
                 <Typography variant="h2">Чат</Typography>
-                {messages.length > 0 && messages.map((message) => (
-                    <Post key={message.user + message.createdAt}
+                {messages && messages.length > 0 && messages.map((message) => (
+                    <Post key={message._id}
                           message={message}
+                          onDeleteMessage={() => deletedMessage(message._id)}
                     />
                 ))}
-                <Grid container item alignItems="center" spacing={1}>
+                <Grid container item alignItems="center" spacing={4}>
                     <Grid item xs>
                         <TextField
                             label="Напишите сообщение"
@@ -117,8 +125,8 @@ const Chat = () => {
                         />
                     </Grid>
                     <Grid item>
-                        <IconButton color="primary" onClick={handleSendMessage}>
-                            <SendIcon/>
+                        <IconButton color="primary" onClick={handleSendMessage} disabled={!isConnected}>
+                            <SendIcon />
                         </IconButton>
                     </Grid>
                 </Grid>

@@ -12,6 +12,7 @@ export interface UserFields {
     displayName: string;
     googleID?: string;
     avatar?: string;
+    isActive: boolean;
 }
 export interface UserMethods {
     checkPassword(password: string): Promise<boolean>;
@@ -19,6 +20,18 @@ export interface UserMethods {
 }
 type UserModal = Model<UserFields, {}, UserMethods>;
 
+export interface UserClient {
+    _id: string,
+    token: string,
+    displayName: string
+    avatar: string | null,
+}
+
+export interface UserWS {
+    _id: string,
+    displayName: string
+    avatar: string | null,
+}
 export interface PostApi {
     id: string;
     message: string;
@@ -31,5 +44,8 @@ export interface PostMutation {
 }
 export interface IncomingMessage {
     type: string;
-    payload: PostMutation[];
+    payload: {
+        messages: PostMutation[],
+        clients: UserClient[]
+    };
 }

@@ -20,7 +20,7 @@ return(
         <header>
             <AppToolbar/>
         </header>
-        <Container>
+        <Container sx={{overflow: 'hidden'}}>
             <WarningMessage/>
             <Routes>
                 <Route path='/' element={<Home/>}/>

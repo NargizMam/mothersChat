@@ -13,6 +13,7 @@ usersRouter.post('/', imagesUpload.single('avatar'),async (req, res, next) => {
             password: req.body.password,
             displayName: req.body.displayName,
             avatar: req.file ? req.file.filename : null,
+            isActive: true,
         });
         user.generateToken();
         await user.save();
@@ -53,6 +54,7 @@ usersRouter.post('/google', async (req, res, next) => {
                 googleID: id,
                 displayName: displayName ? displayName : email,
                 avatar: image,
+                isActive: true,
             });
         }
         user.generateToken();
@@ -77,6 +79,7 @@ usersRouter.post('/sessions', async (req, res, next) => {
             return res.status(422).send({ error: 'Логин или пароль введен неверно!' });
         }
         user.generateToken();
+        user.isActive = true;
         await user.save();
         return res.send({ message: 'Логин и пароль верны!', user });
     } catch (e) {
@@ -99,6 +102,7 @@ usersRouter.delete('/sessions', async (req, res, next) => {
             return res.send({ ...successMessage });
         }
         user.generateToken();
+        user.isActive = false;
         await user.save();
         return res.send({ ...successMessage, stage: 'Success' });
     } catch (e) {
